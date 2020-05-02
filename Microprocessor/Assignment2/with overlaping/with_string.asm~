@@ -1,0 +1,108 @@
+section .data
+	m1: db ' BEFORE BLOCK TRANSFER ' ,0x0A
+	l1: equ $-m1
+
+	m2: db ' AFTER BLOCK TRANSFER ',0x0A
+	l2: equ $-m2
+
+	msg1: db ":"
+	len1: equ $-msg1
+
+	msg2: db 0x0A
+	len2: equ $-msg2
+
+	arr: dq 0x123456789ABCDEF,0x596852478589ABF9,0x9874651233214569,0x456123789ABCDEFC,0xF56123789ABCDEFC,0,0,0,0,0
+
+section .bss
+
+	%macro write 2
+	mov rax,1
+	mov rdi,1
+	mov rsi,%1
+	mov rdx,%2
+	syscall
+	%endmacro
+
+	cnt: resb 5
+	cnt2: resb 16
+	result: resb 16
+
+section .text
+global main
+main:
+	
+	write m1,l1
+	mov rsi,arr
+	mov byte[cnt],5
+	call print
+
+	mov rsi,arr
+	mov rdi,arr+24
+
+	mov rcx,5
+	cld                  ; block transfer with string instruction
+	rep movsq
+
+	write m2,l2
+	mov rsi,arr
+	mov byte[cnt],8
+	call print	
+	
+	mov rax,60
+	mov rdi,3
+	syscall
+
+htoa:	mov rsi,result
+	mov byte[cnt2],16
+
+up2:	rol rdx,04
+	mov cl,dl
+	and cl,0FH
+	cmp cl,09
+	jbe next2
+	add cl,07
+next2:	add cl,30H
+	mov byte[rsi],cl
+	inc rsi
+	dec byte[cnt2]
+	jnz up2
+
+	mov rax,1
+	mov rdi,1
+	mov rsi,result
+	mov rdx,16
+	syscall
+	
+	ret
+
+print:
+	mov rdx,rsi
+	push rsi
+	call htoa
+
+	mov rax,1
+	mov rdi,1
+	mov rsi,msg1
+	mov rdx,len1
+	syscall
+
+	pop rsi
+	mov rdx,qword[rsi]
+
+	push rsi
+	call htoa
+
+	mov rax,1
+	mov rdi,1
+	mov rsi,msg2
+	mov rdx,len2
+	syscall
+
+	pop rsi
+	add rsi,8
+	dec byte[cnt]
+	jnz print
+
+	ret
+
+

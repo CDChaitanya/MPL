@@ -1,0 +1,96 @@
+section .data
+	a: db "a.txt",0
+	b: db "b.txt",0
+	c: db "c.txt",0
+
+	msg1: db 'file exists ',0x0A
+	len1: equ $-msg1
+
+	msg2: db 'file does not exists ',0x0A
+	len2: equ $-msg2
+section .bss
+	fd1: resb 8
+	fd2: resb 8
+	fd3: resb 8
+	
+	length1: resb 100
+	length2: resb 100
+	length3: resb 100
+	
+	buffer1: resb 1000
+	buffer2: resb 1000
+	buffer3: resb 1000
+
+	%macro scall 4
+	mov rax,%1
+	mov rdi,%2
+	mov rsi,%3
+	mov rdx,%4
+	syscall
+	%endmacro
+
+section .text
+global main
+main:
+;############## OPEN & READ & PRINT ###################
+	
+	scall 2,a,2,0777              ;open
+	mov qword[fd1],rax
+	bt rax,63
+	jc exi 	
+
+	scall 0,[fd1],buffer1,1000 	  ;read
+	mov qword[length1],rax             
+
+	scall 1,1,msg1,len1               ;print
+	scall 1,1,buffer1,length1
+
+	mov rax,3                         ;close
+	mov rdi,[fd1]
+	syscall
+
+;############## OPEN & COPY & PRINT ###################
+	
+	scall 2,b,2,0777              ;open
+	mov qword[fd2],rax
+	bt rax,63
+	jc exi 
+
+	scall 0,[fd2],buffer2,1000 	  ;read
+	mov qword[length2],rax              ; not essential
+
+	scall 1,[fd2],buffer1,qword[length1]       ;copy
+	scall 1,1,buffer2,length2          ;print
+
+	mov rax,3                         ;close
+	mov rdi,[fd2]
+	syscall
+
+;############## OPEN & COPY & PRINT ###################
+	
+	scall 2,c,2,0777              ;open
+	mov qword[fd3],rax
+	bt rax,63
+	jc exi 
+
+	scall 0,[fd3],buffer3,1000 	  ;read
+	mov qword[length3],rax             
+
+	scall 1,1,msg1,len1               ;print
+	scall 1,1,buffer3,qword[length3] 
+
+	mov rax,87                        ;delete
+	mov rdi,c
+	syscall
+
+	scall 2,c,2,0777              ;again open
+	mov qword[fd3],rax
+	bt rax,63
+	jc exi 
+
+;############## OPEN & COPY & PRINT ###################
+
+exi: 	scall 1,1,msg2,len2
+	mov rax,60
+	mov rdi,0
+	syscall

@@ -1,0 +1,118 @@
+section .data
+	fname: db "abc.txt",0
+	
+	msg1: db 'Original Array : ',0x0A
+	len1: equ $-msg1
+
+	msg2: db 'Ascending Order : ',0x0A
+	len2: equ $-msg2
+
+	msg3: db 'Descending Order : ',0x0A
+	len3: equ $-msg3
+
+	noofPasses: db 6
+	noofComparisons: db 6
+
+section .bss
+	fd: resb 8
+	length: resb 10
+	buffer: resb 1000
+
+	%macro scall 4
+	mov rax,%1
+	mov rdi,%2
+	mov rsi,%3
+	mov rdx,%4
+	syscall
+	%endmacro
+
+section .text
+global main
+main:
+;############## OPEN & READ ###################
+	
+	scall 2,fname,2,0777            ;open
+	mov qword[fd],rax
+
+	scall 0,[fd],buffer,1000
+	mov qword[length],rax            ;read
+
+	scall 1,1,msg1,len1               ; printing normal array
+	scall 1,1,buffer,length
+
+;############## ASCENDING ORDER################	
+
+	mov byte[noofPasses],6            ;init
+
+loop2:	mov rsi,buffer
+	mov rdi,buffer+2
+	mov byte[noofComparisons],6          ; essential
+
+	loop3:	mov al,byte[rdi]
+		cmp byte[rsi],al
+		jbe next                      ; ASCending
+		mov bl,byte[rsi]
+		mov cl,byte[rdi]
+		mov byte[rdi],bl             ;swapping
+		mov byte[rsi],cl
+	
+		next:	add rsi,2
+			add rdi,2                              ;incrementation
+			dec byte[noofComparisons]
+			jnz loop3
+
+	dec byte[noofPasses]
+	jnz loop2
+
+	scall 1,1,msg2,len2
+	scall 1,1,buffer,length
+	scall 1,[fd],buffer,14
+
+;############## DESCENDING ORDER################	
+	
+	mov byte[noofPasses],6         ;init
+
+loop4:	mov rsi,buffer
+	mov rdi,buffer+2
+	mov byte[noofComparisons],6
+
+	loop5:	mov al,byte[rdi]
+		cmp byte[rsi],al
+		jae next1                             ;desending
+		mov bl,byte[rsi]
+		mov cl,byte[rdi]
+		mov byte[rdi],bl
+		mov byte[rsi],cl
+	
+		next1:	add rsi,2
+			add rdi,2
+			dec byte[noofComparisons]
+			jnz loop5
+
+	dec byte[noofPasses]
+	jnz loop4
+
+	scall 1,1,msg3,len3
+	scall 1,1,buffer,length
+	scall 1,[fd],buffer,14
+
+;############## EXIT CALL####################
+
+mov rax,60
+mov rdi,0
+syscall
+
+;(base) chat@chat-HP-Laptop-15-da0xxx:~/Desktop/MPL 21418/Assignment7$ nasm -f elf64 bubble.asm
+;(base) chat@chat-HP-Laptop-15-da0xxx:~/Desktop/MPL 21418/Assignment7$ ld -o bubble bubble.o
+;ld: warning: cannot find entry symbol _start; defaulting to 00000000004000b0
+;(base) chat@chat-HP-Laptop-15-da0xxx:~/Desktop/MPL 21418/Assignment7$ ./bubble
+;Original Array : 
+;5 6 7 8 9 4 3
+;Ascending Order : 
+;3 4 5 6 7 8 9
+;Descending Order : 
+;9 8 7 6 5 4 3
+;(base) chat@chat-HP-Laptop-15-da0xxx:~/Desktop/MPL 21418/Assignment7$ 
+
+
+
